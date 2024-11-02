@@ -3,9 +3,14 @@ import time
 import socket
 import json
 import argparse
+import os
 
-# Load configuration from file
-with open('config.json', 'r') as config_file:
+# Get the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Load configuration from file in the script directory
+config_path = os.path.join(script_dir, 'config.json')
+with open(config_path, 'r') as config_file:
     config = json.load(config_file)
 
 awtrix_ip = config['awtrix_ip']
