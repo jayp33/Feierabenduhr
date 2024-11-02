@@ -4,6 +4,7 @@ import socket
 import json
 import argparse
 import os
+from datetime import datetime
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,13 +26,14 @@ def get_tasktimer_text(file_path):
         print("Fehler beim Lesen der Datei: {}".format(e))
         return None
 
-def send_app_to_awtrix(app_name, text, icon, duration):
+def send_app_to_awtrix(app_name, text, icon, duration, color):
     headers = {"Content-Type": "application/json"}
     data = {
         "text": text,
         "icon": icon,
         "duration": duration,
-        "lifetime": 600
+        "lifetime": 600,
+        "color": color
     }
 
     awtrix_url = "/api/custom?name=" + app_name
@@ -63,7 +65,19 @@ def main(file_path):
                 task_text = get_tasktimer_text(file_path)
                 if task_text:
                     print("Task text: {}".format(task_text))
-                    send_app_to_awtrix("tasktimer", task_text, 7320, 600)
+                    try:
+                        task_text = task_text.lstrip('\ufeff')  # Remove BOM if present
+                        task_time = datetime.strptime(task_text, "%H:%M").time()
+                        print("task_time: {}".format(task_time))
+                        current_time = datetime.now().time()
+                        if task_time < current_time:
+                            color = "#00ff00"  # Green
+                        else:
+                            color = "#ffffff"  # White
+                    except ValueError as ve:
+                        print("ValueError: {}".format(ve))
+                        color = "#ffffff"  # White if not in HH:mm format
+                    send_app_to_awtrix("tasktimer", task_text, 7320, 600, color)
                 else:
                     print("No task text found.")
             else:
