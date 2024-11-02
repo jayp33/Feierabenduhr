@@ -2,13 +2,13 @@ import http.client
 import time
 import socket
 import json
+import argparse
 
 # Load configuration from file
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
 
 awtrix_ip = config['awtrix_ip']
-file_path = config['file_path']
 
 def get_tasktimer_text(file_path):
     try:
@@ -49,7 +49,7 @@ def host_available():
         print("Error: {} is not reachable. Exception: {}".format(awtrix_ip, e))
         return False
 
-def main():
+def main(file_path):
     while True:
         try:
             print("Checking host availability...")
@@ -72,5 +72,7 @@ def main():
             time.sleep(60)
 
 if __name__ == "__main__":
-    main()
-
+    parser = argparse.ArgumentParser(description='Run the task timer script with a specified file path.')
+    parser.add_argument('file_path', type=str, help='The path to the file containing the task text.')
+    args = parser.parse_args()
+    main(args.file_path)
