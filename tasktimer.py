@@ -1,6 +1,6 @@
 import http.client
 import time
-import subprocess
+import socket
 import json
 
 # Load configuration from file
@@ -42,11 +42,11 @@ def send_app_to_awtrix(app_name, text, icon, duration):
 
 def host_available():
     try:
-        result = subprocess.run(['ping', '-c', '1', awtrix_ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=5)
-        return result.returncode == 0
-
-    except subprocess.TimeoutExpired:
-        print("Timeout: {} is not reachable".format(awtrix_ip))
+        # Attempt to connect to the host on port 80 (HTTP)
+        with socket.create_connection((awtrix_ip, 80), timeout=5):
+            return True
+    except (socket.timeout, socket.error) as e:
+        print("Error: {} is not reachable. Exception: {}".format(awtrix_ip, e))
         return False
 
 def main():
