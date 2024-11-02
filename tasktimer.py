@@ -1,4 +1,4 @@
-import requests
+import http.client
 import time
 import subprocess
 import json
@@ -17,7 +17,7 @@ def get_tasktimer_text(file_path):
             first_word = first_line.split()[0]
             return first_word
     except Exception as e:
-        print(f"Fehler beim Lesen der Datei: {e}")
+        print("Fehler beim Lesen der Datei: {}".format(e))
         return None
 
 def send_app_to_awtrix(app_name, text, icon, duration):
@@ -29,21 +29,24 @@ def send_app_to_awtrix(app_name, text, icon, duration):
         "lifetime": 600
     }
 
-    awtrix_url = "http://"+ awtrix_ip + "/api/custom?name=" + app_name
-    response = requests.post(awtrix_url, json=data, headers=headers)
+    awtrix_url = "/api/custom?name=" + app_name
+    conn = http.client.HTTPConnection(awtrix_ip)
+    conn.request("POST", awtrix_url, body=json.dumps(data), headers=headers)
+    response = conn.getresponse()
     
-    if response.text != "OK":
-        print(response.text)
+    if response.read().decode() != "OK":
+        print(response.read().decode())
+    conn.close()
 
     # time.sleep(duration * 4)
 
 def host_available():
     try:
-        result = subprocess.run(['ping', '-c', '1', awtrix_ip], capture_output=True, text=True, timeout=5)
+        result = subprocess.run(['ping', '-c', '1', awtrix_ip], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, timeout=5)
         return result.returncode == 0
 
     except subprocess.TimeoutExpired:
-        print(f"Timeout: {awtrix_ip} is not reachable")
+        print("Timeout: {} is not reachable".format(awtrix_ip))
         return False
 
 def main():
@@ -54,7 +57,7 @@ def main():
                 print("Host is available. Reading task text...")
                 task_text = get_tasktimer_text(file_path)
                 if task_text:
-                    print(f"Task text: {task_text}")
+                    print("Task text: {}".format(task_text))
                     send_app_to_awtrix("tasktimer", task_text, 7320, 600)
                 else:
                     print("No task text found.")
@@ -64,7 +67,7 @@ def main():
             print("Sleeping for 30 seconds...")
             time.sleep(30)
         except Exception as e:
-            print(f"Fehler: {e}")
+            print("Fehler: {}".format(e))
             print("Sleeping for 60 seconds due to error...")
             time.sleep(60)
 
