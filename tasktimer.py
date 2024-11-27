@@ -4,7 +4,7 @@ import socket
 import json
 import argparse
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Get the directory where the script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -15,6 +15,9 @@ with open(config_path, 'r') as config_file:
     config = json.load(config_file)
 
 awtrix_ip = config['awtrix_ip']
+work_duration = config['WorkDuration']
+task_timer_work_duration = config['TaskTimerWorkDuration']
+over_time_minutes = task_timer_work_duration - work_duration
 
 def get_tasktimer_text(file_path):
     try:
@@ -70,7 +73,11 @@ def main(file_path):
                         task_time = datetime.strptime(task_text, "%H:%M").time()
                         print("task_time: {}".format(task_time))
                         current_time = datetime.now().time()
-                        if task_time < current_time:
+                        
+                        # Subtract over_time_minutes from task_time
+                        task_time_with_overtime = (datetime.combine(datetime.today(), task_time) - timedelta(minutes=over_time_minutes)).time()
+                        
+                        if task_time_with_overtime < current_time:
                             color = "#00ff00"  # Green
                         else:
                             color = "#ffffff"  # White
