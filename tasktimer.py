@@ -79,6 +79,10 @@ def main(file_path):
                         
                         if task_time_with_overtime < current_time:
                             color = "#00ff00"  # Green
+                            # Calculate the time passed since the official closing time
+                            time_passed = datetime.combine(datetime.today(), current_time) - datetime.combine(datetime.today(), task_time)
+                            task_text = "{:01}:{:02}".format(time_passed.seconds // 3600, (time_passed.seconds // 60) % 60)
+                            print("Updated task text: {}".format(task_text))
                         else:
                             color = "#ffffff"  # White
                     except ValueError as ve:
