@@ -4,6 +4,7 @@ import socket
 import json
 import argparse
 import os
+import re
 from datetime import datetime, timedelta
 
 # Get the directory where the script is located
@@ -24,10 +25,27 @@ def get_tasktimer_text(file_path):
         with open(file_path, 'r') as file:
             first_line = file.readline().strip()
             first_word = first_line.split()[0]
-            return first_word
+            return first_word.lstrip('\ufeff')  # Remove BOM if present
     except Exception as e:
         print("Fehler beim Lesen der Datei: {}".format(e))
         return None
+
+def is_valid_time_format(task_text: str) -> bool:
+    pattern = r'^\d{2}:\d{2}$'
+    return bool(re.match(pattern, task_text))
+
+def calculate_closing_time(task_time, task_timer_work_duration, work_duration):
+    """
+    Berechnet den Feierabend basierend auf der Anzeige im Task Timer und der eingestellten Überstunden.
+
+    :param task_time: Die vom Task Timer angezeigte Feierabend Uhrzeit (datetime.time).
+    :param task_timer_work_duration: Die im Task Timer eingestellte Arbeitsdauer in Minuten (int).
+    :param work_duration: Die reguläre Arbeitsdauer in Minuten (int).
+    :return: Die reguläre Feierabend Uhrzeit (datetime.time).
+    """
+    overtime = task_timer_work_duration - work_duration
+    closing_time = (datetime.combine(datetime.today(), task_time) - timedelta(minutes=overtime)).time()
+    return closing_time
 
 def send_app_to_awtrix(app_name, text, icon, duration, color):
     headers = {"Content-Type": "application/json"}
@@ -66,21 +84,19 @@ def main(file_path):
             if host_available():
                 print("Host is available. Reading task text...")
                 task_text = get_tasktimer_text(file_path)
-                if task_text:
+                if is_valid_time_format(task_text):
                     print("Task text: {}".format(task_text))
                     try:
-                        task_text = task_text.lstrip('\ufeff')  # Remove BOM if present
                         task_time = datetime.strptime(task_text, "%H:%M").time()
                         print("task_time: {}".format(task_time))
+                        closing_time = calculate_closing_time(task_time, task_timer_work_duration, work_duration)
+                        print("Feierabend: {}".format(closing_time))
+
                         current_time = datetime.now().time()
-                        
-                        # Subtract over_time_minutes from task_time
-                        task_time_with_overtime = (datetime.combine(datetime.today(), task_time) - timedelta(minutes=over_time_minutes)).time()
-                        
-                        if task_time_with_overtime < current_time:
+                        if closing_time <= current_time:
                             color = "#00ff00"  # Green
                             # Calculate the time passed since the official closing time
-                            time_passed = datetime.combine(datetime.today(), current_time) - datetime.combine(datetime.today(), task_time)
+                            time_passed = datetime.combine(datetime.today(), current_time) - datetime.combine(datetime.today(), closing_time)
                             task_text = "{:01}:{:02}".format(time_passed.seconds // 3600, (time_passed.seconds // 60) % 60)
                             print("Updated task text: {}".format(task_text))
                         else:
