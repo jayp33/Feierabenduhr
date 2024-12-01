@@ -53,7 +53,7 @@ def send_app_to_awtrix(app_name, text, icon, duration, color):
         "text": text,
         "icon": icon,
         "duration": duration,
-        "lifetime": 600,
+        "lifetime": 3600,
         "color": color
     }
 
